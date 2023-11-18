@@ -23,6 +23,10 @@ module "ec2_instance" {
   instance_type        = "t3.micro"
   subnet_ids           = var.private_subnets
   security_group_ids   = [var.security_group_id]
+  user_data = <<-EOT
+    #!/bin/bash
+    amazon-linux-extras install nginx1.12
+  EOT
 }
 
 module "alb" {

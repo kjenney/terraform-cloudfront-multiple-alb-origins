@@ -11,7 +11,7 @@ provider "aws" {
 
 module "vpc" {
   source          = "terraform-aws-modules/vpc/aws"
-  version         = "2.80.0"
+  version         = "5.2.0"
   
   name            = "my-vpc"
   cidr            = "10.0.0.0/16"
@@ -21,7 +21,7 @@ module "vpc" {
 }
 
 module "puppy_origin" {
-  source              = "./modules/orogin"
+  source              = "./modules/origin"
   name                = "puppy"
   private_subnets     = module.vpc.private_subnets
   public_subnets      = module.vpc.public_subnets
@@ -29,32 +29,32 @@ module "puppy_origin" {
   image_url           = local.puppy_image
 }
 
-module "cloudfront" {
-  source  = "terraform-aws-modules/cloudfront/aws"
-  version = "3.2.1"
+# module "cloudfront" {
+#   source  = "terraform-aws-modules/cloudfront/aws"
+#   version = "3.2.1"
   
-  price_class           = "PriceClass_100"
-  aliases               = ["my-cloudfront.example.com"]
-  acm_certificate_arn   = "arn:aws:acm:us-east-1:123456789012:certificate/abcde12345"
-  comment               = "My CloudFront distribution"
+#   price_class           = "PriceClass_100"
+#   aliases               = ["my-cloudfront.example.com"]
+#   acm_certificate_arn   = "arn:aws:acm:us-east-1:123456789012:certificate/abcde12345"
+#   comment               = "My CloudFront distribution"
 
-  origin = {
-    puppy = {
-      domain_name = module.puppy_origin.dns_name
-      custom_origin_config = {
-        http_port              = 80
-        https_port             = 443
-        origin_protocol_policy = "match-viewer"
-        origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
-      }
-    }
+#   origin = {
+#     puppy = {
+#       domain_name = module.puppy_origin.dns_name
+#       custom_origin_config = {
+#         http_port              = 80
+#         https_port             = 443
+#         origin_protocol_policy = "match-viewer"
+#         origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
+#       }
+#     }
 
-    s3_one = {
-      domain_name = "my-s3-bycket.s3.amazonaws.com"
-      s3_origin_config = {
-        origin_access_identity = "s3_bucket_one"
-      }
-    }
-  }
-}
+#     s3_one = {
+#       domain_name = "my-s3-bycket.s3.amazonaws.com"
+#       s3_origin_config = {
+#         origin_access_identity = "s3_bucket_one"
+#       }
+#     }
+#   }
+# }
 
