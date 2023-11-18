@@ -23,7 +23,9 @@ module "security_group_instance" {
 
   vpc_id      = var.vpc_id
 
-  egress_rules = ["https-443-tcp"]
+  ingress_cidr_blocks      = ["10.0.0.0/16"]
+  ingress_rules            = ["http-80-tcp"]
+  egress_rules = ["all-all"]
 }
 
 module "vpc_endpoints" {
@@ -53,12 +55,21 @@ module "vpc_endpoints" {
   }
 }
 
+data "template_file" "init" {
+  template = "${file("${path.module}/user_data.sh.tpl")}"
+
+  vars = {
+    image_url   = var.image_url
+    image_name  = var.name
+  }
+}
+
 module "ec2_instance" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "5.5.0"
   
   name                            = var.name
-  ami                             = data.aws_ami.al2.id
+  ami                             = var.ami != "" ? var.ami : data.aws_ami.al2.id
   instance_type                   = "t3.large"
   subnet_id                       = var.private_subnets[0]
   vpc_security_group_ids          = [module.security_group_instance.security_group_id]
@@ -67,31 +78,57 @@ module "ec2_instance" {
   iam_role_policies               = {
     AmazonSSMManagedInstanceCore  = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
+  user_data = data.template_file.init.rendered
 }
 
-# module "alb" {
-#   source  = "terraform-aws-modules/alb/aws"
-#   version = "6.0.0"
+module "alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "9.2.0"
   
-#   name               = var.name
-#   load_balancer_type = "application"
-#   internal           = false
-#   subnets            = var.public_subnets
-#   target_groups = {
-#     ex-instance = {
-#       name_prefix       = Var.name
-#       protocol          = "HTTP"
-#       port              = 80
-#       target_type       = "instance"
-#       create_attachment = true
-#       target_id         = module.ec2_instance.id
-#     }
-#   }
+  name               = var.name
+  vpc_id             = var.vpc_id
+  load_balancer_type = "application"
+  internal           = false
+  subnets            = var.public_subnets
+  security_group_ingress_rules = {
+    all_http = {
+      from_port   = 80
+      to_port     = 80
+      ip_protocol = "tcp"
+      description = "HTTP web traffic"
+      cidr_ipv4   = var.whitelisted_ip != "" ? var.whitelisted_ip : "0.0.0.0/0"
+    }
+  }
+  security_group_egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "10.0.0.0/16"
+    }
+  }
+  listeners           = {
+    ex-http = {
+      port            = 80
+      protocol        = "HTTP"
+      forward = {
+        target_group_key = "ex-instance"
+      }
+    }
+  }
+  target_groups = {
+    ex-instance = {
+      name_prefix       = var.name
+      protocol          = "HTTP"
+      port              = 80
+      target_type       = "instance"
+      create_attachment = true
+      target_id         = module.ec2_instance.id
+    }
+  }
 
-#   tags = {
-#     Environment = "Development"
-#     Project     = "Example"
-#   }
-# }
+  tags = {
+    Environment = "Development"
+    Project     = "Example"
+  }
+}
 
 
