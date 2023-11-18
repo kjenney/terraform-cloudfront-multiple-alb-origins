@@ -89,6 +89,7 @@ module "alb" {
   vpc_id             = var.vpc_id
   load_balancer_type = "application"
   internal           = false
+  enable_deletion_protection = false
   subnets            = var.public_subnets
   security_group_ingress_rules = {
     all_http = {
