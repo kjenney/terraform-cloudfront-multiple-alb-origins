@@ -27,6 +27,8 @@ module "puppy_origin" {
   public_subnets      = module.vpc.public_subnets
   security_group_id   = module.vpc.default_security_group_id
   image_url           = local.puppy_image
+  vpc_id              = module.vpc.vpc_id
+  private_cidr_blocks = module.vpc.private_subnets_cidr_blocks
 }
 
 # module "cloudfront" {

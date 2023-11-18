@@ -1,3 +1,3 @@
-output "dns_name" {
-    value = module.alb.dns_name
-}
+# output "dns_name" {
+#     value = module.alb.dns_name
+# }
