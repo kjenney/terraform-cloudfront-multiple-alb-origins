@@ -34,32 +34,32 @@ module "puppy_origin" {
   private_cidr_blocks = module.vpc.private_subnets_cidr_blocks
 }
 
-# module "cloudfront" {
-#   source  = "terraform-aws-modules/cloudfront/aws"
-#   version = "3.2.1"
-  
-#   price_class           = "PriceClass_100"
-#   aliases               = ["my-cloudfront.example.com"]
-#   acm_certificate_arn   = "arn:aws:acm:us-east-1:123456789012:certificate/abcde12345"
-#   comment               = "My CloudFront distribution"
+module "cloudfront" {
+  source  = "terraform-aws-modules/cloudfront/aws"
+  version = "3.2.1"
 
-#   origin = {
-#     puppy = {
-#       domain_name = module.puppy_origin.dns_name
-#       custom_origin_config = {
-#         http_port              = 80
-#         https_port             = 443
-#         origin_protocol_policy = "match-viewer"
-#         origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
-#       }
-#     }
+  comment               = "My CloudFront distribution"
 
-#     s3_one = {
-#       domain_name = "my-s3-bycket.s3.amazonaws.com"
-#       s3_origin_config = {
-#         origin_access_identity = "s3_bucket_one"
-#       }
-#     }
-#   }
-# }
+  origin = {
+    puppy = {
+      domain_name = module.puppy_origin.dns_name
+      custom_origin_config = {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "match-viewer"
+        origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
+      }
+    }
+  }
+
+  default_cache_behavior = {
+    target_origin_id           = "puppy"
+    viewer_protocol_policy     = "allow-all"
+
+    allowed_methods = ["GET", "HEAD", "OPTIONS"]
+    cached_methods  = ["GET", "HEAD"]
+    compress        = true
+    query_string    = true
+  }
+}
 
