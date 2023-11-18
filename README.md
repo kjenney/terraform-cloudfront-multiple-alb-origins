@@ -9,6 +9,9 @@ terraform init
 terraform apply
 ```
 
+## Destroy
+
+`terraform destroy`
 
 
 ## Example:
