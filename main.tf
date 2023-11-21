@@ -34,6 +34,18 @@ module "puppy_origin" {
   private_cidr_blocks = module.vpc.private_subnets_cidr_blocks
 }
 
+module "kitty_origin" {
+  source              = "./modules/origin"
+  name                = "kitty"
+  ami                 = var.ami
+  whitelisted_ip      = var.myip
+  private_subnets     = module.vpc.private_subnets
+  public_subnets      = module.vpc.public_subnets
+  security_group_id   = module.vpc.default_security_group_id
+  image_url           = local.kitty_image
+  vpc_id              = module.vpc.vpc_id
+  private_cidr_blocks = module.vpc.private_subnets_cidr_blocks
+}
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
   version = "3.2.1"
@@ -46,7 +58,17 @@ module "cloudfront" {
       custom_origin_config = {
         http_port              = 80
         https_port             = 443
-        origin_protocol_policy = "match-viewer"
+        origin_protocol_policy = "http-only"
+        origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
+      }
+    }
+
+    kitty = {
+      domain_name = module.kitty_origin.dns_name
+      custom_origin_config = {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "http-only"
         origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
       }
     }
@@ -61,5 +83,27 @@ module "cloudfront" {
     compress        = true
     query_string    = true
   }
-}
 
+  ordered_cache_behavior = [
+    {
+      path_pattern           = "/puppy/*"
+      target_origin_id       = "puppy"
+      viewer_protocol_policy = "allow-all"
+
+      allowed_methods = ["GET", "HEAD", "OPTIONS"]
+      cached_methods  = ["GET", "HEAD"]
+      compress        = true
+      query_string    = true
+    },
+    {
+      path_pattern           = "/kitty/*"
+      target_origin_id       = "kitty"
+      viewer_protocol_policy = "allow-all"
+
+      allowed_methods = ["GET", "HEAD", "OPTIONS"]
+      cached_methods  = ["GET", "HEAD"]
+      compress        = true
+      query_string    = true
+    }
+  ]
+}

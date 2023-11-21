@@ -39,7 +39,7 @@ module "vpc_endpoints" {
     {
       service             = service
       subnet_ids          = var.private_subnets
-      private_dns_enabled = true
+      private_dns_enabled = false
       tags                = { Name = "${var.name}-${service}" }
     }
   }
